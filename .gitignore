@@ -1,2 +1,5 @@
 # Environment variables – keep secrets out of the repo
 .env
+.venv/
+venv/
+env/
