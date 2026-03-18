@@ -6,3 +6,5 @@ env/
 .env.bak/
 .env.local
 .env/
+**/.env
+.env
