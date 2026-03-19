@@ -1,0 +1,31 @@
+# ingestion/extractors/quote_extractor.py
+import json, os, boto3
+from datetime import datetime
+from ingestion.api_client import AlphaVantageClient
+
+WATCHLIST = ['AAPL','MSFT','GOOGL','AMZN','NVDA',
+             'META','TSLA','JPM','LMT','NOC']
+
+class QuoteExtractor:
+    def __init__(self):
+        self.client = AlphaVantageClient()
+        self.s3 = boto3.client('s3')
+        self.bucket = os.getenv('marketpulse-lakehouse-adam')
+
+    def extract_and_store(self):
+        for symbol in WATCHLIST:
+            data = self.client.get('GLOBAL_QUOTE', symbol)
+            data['_extracted_at'] = datetime.utcnow().isoformat()
+            data['_source'] = 'alpha_vantage_quote'
+            self._write_to_bronze(symbol, data)
+
+    def _write_to_bronze(self, symbol, data):
+        now = datetime.utcnow()
+        key = (
+            f'bronze/quotes/year={now.year}/month={now.month:02d}/'
+            f'day={now.day:02d}/{symbol}_{now.isoformat()}.json'
+        )
+        self.s3.put_object(Bucket=self.bucket,
+                           Key=key,
+                           Body=json.dumps(data))
+
